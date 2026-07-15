@@ -259,6 +259,36 @@ The skill will not write to Redmine without asking, and will not close a ticket 
 its own. It also treats issue text as untrusted input — anyone who can file a bug
 can write instructions aimed at the model in the repro steps.
 
+## Connect Claude Code automatically
+
+Opening **this repo** in Claude Code connects the server automatically via
+`.mcp.json` — nothing else to do.
+
+To make the `redmine` tools available in **every** project (not just this repo),
+register the server once at user scope. With the venv active, run:
+
+```bash
+claude mcp add redmine --scope user \
+  --env REDMINE_URL=https://tracker.rapiddata.com \
+  --env REDMINE_API_KEY=<your-40-char-key> \
+  -- mcp-redmine-rd-local
+```
+
+Claude Code now starts the server on demand in any project. Confirm with:
+
+```bash
+claude mcp list        # should show: redmine
+```
+
+or `/mcp` inside a Claude Code session (look for `redmine` connected). Remove it
+again any time with `claude mcp remove redmine --scope user`.
+
+> The `command` (`mcp-redmine-rd-local`) must be resolvable when Claude Code
+> launches it. If you registered it from a venv, keep that venv active, or use the
+> script's absolute path in place of the bare command
+> (`.venv/Scripts/mcp-redmine-rd-local.exe` on Windows,
+> `.venv/bin/mcp-redmine-rd-local` on macOS/Linux).
+
 ## License
 
 MIT — see [LICENSE](LICENSE). Forked from
