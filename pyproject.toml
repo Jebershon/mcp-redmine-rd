@@ -1,0 +1,18 @@
+[project]
+name = "mcp-redmine-rd"
+version = "0.5.0"
+description = "RapidData Redmine MCP server — bug-fixing tools with screenshots; API-key (local) or OAuth (centralized) auth"
+requires-python = ">=3.11"
+dependencies = [
+    "fastmcp>=3.0.0,<4.0.0",
+    "httpx>=0.28.0",
+    "pillow>=11.0.0",
+    "python-dotenv>=1.1.0",
+]
+
+[project.scripts]
+mcp-redmine-rd = "mcp_redmine_rd.server:main"
+mcp-redmine-rd-local = "mcp_redmine_rd.server:main_local_stdio"
+
+[tool.setuptools.packages.find]
+where = ["src"]

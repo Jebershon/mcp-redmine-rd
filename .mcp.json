@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "redmine": {
+      "command": "mcp-redmine-rd-local",
+      "env": {
+        "REDMINE_URL": "https://tracker.rapiddata.com"
+      }
+    }
+  }
+}

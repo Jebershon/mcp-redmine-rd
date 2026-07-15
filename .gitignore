@@ -1,0 +1,21 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Claude — share the skill and MCP config, keep local/personal settings out
+.claude/settings.local.json
+.claude/*.local.json
+
+# IDE
+.vscode/
+.idea/
