@@ -70,31 +70,108 @@ no server to start by hand:
 }
 ```
 
-A developer's one-time setup:
+### A developer's one-time setup
+
+**Prerequisites:** Python 3.11+, `git`, and [Claude Code](https://claude.com/claude-code).
+Check Python with `python --version` (use `python3` on macOS/Linux if `python`
+points at 2.x).
+
+**1. Clone the repo and enter it**
 
 ```bash
-git clone https://github.com/Jebershon/mcp-redmine-rd.git && cd mcp-redmine-rd
-python -m venv .venv && . .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e .
-printf 'REDMINE_API_KEY=<their-own-key>\n' >> .env   # from My account → API access key
+git clone https://github.com/Jebershon/mcp-redmine-rd.git
+cd mcp-redmine-rd
 ```
 
-Open the repo in Claude Code (from the activated venv so the `mcp-redmine-rd-local`
-command is on `PATH`). The `redmine` server connects automatically and `/fix-bug`
-is available.
+**2. Create and activate a virtual environment**
 
-> Prefer not to depend on the venv being active? Point the `.mcp.json` command at
-> the absolute path of the installed script (`.venv/Scripts/mcp-redmine-rd-local`
-> on Windows, `.venv/bin/mcp-redmine-rd-local` elsewhere).
+A venv keeps this project's dependencies isolated. Activating it also puts the
+`mcp-redmine-rd-local` command on your `PATH`, which `.mcp.json` needs.
+
+```bash
+python -m venv .venv
+```
+
+Activate it — pick the line for your shell:
+
+```bash
+source .venv/bin/activate        # macOS / Linux
+.venv\Scripts\Activate.ps1       # Windows PowerShell
+source .venv/Scripts/activate    # Windows Git Bash
+```
+
+Your prompt should now show `(.venv)`.
+
+**3. Install the server**
+
+```bash
+pip install -e .
+```
+
+Confirm the launch command is available (this is what `.mcp.json` runs):
+
+```bash
+mcp-redmine-rd-local --help  ||  echo "not on PATH — is the venv active?"
+```
+
+**4. Get your personal Redmine API key**
+
+In Redmine (`https://tracker.rapiddata.com`): click your name (top right) →
+**My account** → in the right sidebar, **API access key** → **Show**. Copy the
+40-character key. It acts as your account — treat it like a password.
+
+**5. Create your `.env` file**
+
+The server reads your key from a local `.env` that is **gitignored** — it is never
+committed and never shared. `REDMINE_URL` already comes from `.mcp.json`, so `.env`
+only needs your key:
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and set:
+
+```
+REDMINE_API_KEY=<paste-your-40-char-key>
+```
+
+**6. Verify it works (optional but recommended)**
+
+Run the test suite to confirm the install is healthy:
+
+```bash
+pip install pytest pytest-asyncio
+pytest -q
+```
+
+**7. Open the repo in Claude Code**
+
+Launch Claude Code **from this repo directory, with the venv still active** (so the
+command is on `PATH`):
+
+```bash
+claude
+```
+
+Claude Code reads `.mcp.json`, starts the `redmine` server over stdio on demand, and
+the tools plus the `/fix-bug` skill become available. Verify inside Claude Code with
+`/mcp` — you should see `redmine` connected — then try `/fix-bug <an issue number>`.
+
+> **If `redmine` doesn't connect**, the `mcp-redmine-rd-local` command isn't on
+> `PATH` — you most likely launched Claude Code without the venv active. Either
+> activate the venv first, or edit `.mcp.json`'s `command` to the script's absolute
+> path (`.venv/Scripts/mcp-redmine-rd-local.exe` on Windows,
+> `.venv/bin/mcp-redmine-rd-local` on macOS/Linux).
 
 ## Environment variables
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `REDMINE_URL` | Yes | — | Base URL of your Redmine instance |
-| `REDMINE_API_KEY` | Yes (local mode) | — | Your Redmine API key. Setting it selects local mode. |
-| `MCP_LOCAL_TOKEN` | No | `local` | Bearer token the MCP client presents in local **HTTP** mode |
-| `MCP_HOST` | No | `127.0.0.1` (local) | Bind host |
+| `REDMINE_API_KEY` | Yes | — | Your personal Redmine API key (My account → API access key). |
+| `MCP_LOCAL_TOKEN` | No | `local` | Bearer token the MCP client presents in **HTTP** mode (ignored over stdio) |
+| `MCP_HOST` | No | `127.0.0.1` | Bind host (HTTP mode) |
 | `MCP_PORT` | No | `8000` | Bind port |
 | `CORS_ALLOW_ORIGINS` | No | `*` | Comma-separated allowed origins. Narrow this for a shared deployment. |
 
