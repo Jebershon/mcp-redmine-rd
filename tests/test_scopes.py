@@ -1,4 +1,4 @@
-"""Unit tests for OAuth scope constants, registry, and requires_scopes decorator."""
+"""Unit tests for scope constants, registry, and the requires_scopes decorator."""
 
 from __future__ import annotations
 
@@ -14,13 +14,10 @@ from mcp_redmine_rd.scopes import (
     SEARCH_PROJECT,
     VIEW_ISSUES,
     VIEW_PROJECT,
-    _allowed_scopes,
     _registry,
     check_scope,
-    get_effective_scopes,
     get_registered_scopes,
     requires_scopes,
-    set_allowed_scopes,
 )
 import mcp_redmine_rd.scopes as scopes_mod
 
@@ -42,7 +39,7 @@ def test_check_scope_returns_error_when_missing():
     result = check_scope(_token([VIEW_PROJECT]), VIEW_ISSUES)
     assert result is not None
     assert "view_issues" in result
-    assert "re-authorize" in result
+    assert "permission" in result
 
 
 def test_check_scope_multiple_all_present():
@@ -147,7 +144,7 @@ async def test_requires_scopes_blocks_missing_scope():
         result = await _dummy()
 
     assert "view_issues" in result
-    assert "re-authorize" in result
+    assert "permission" in result
 
 
 @pytest.mark.asyncio
@@ -228,56 +225,16 @@ async def test_requires_scopes_no_args_allows_authenticated():
     assert result == "success"
 
 
-# --- get_effective_scopes / set_allowed_scopes ---
+# --- get_registered_scopes ---
 
 
-def test_get_effective_scopes_no_allowlist_returns_all():
-    """Without an allowlist, get_effective_scopes() returns all registered scopes."""
-    scopes_mod._allowed_scopes = None
-    # Add test scopes to registry
-    _registry.update({"eff_a", "eff_b"})
-    try:
-        effective = get_effective_scopes()
-        assert "eff_a" in effective
-        assert "eff_b" in effective
-    finally:
-        _registry.discard("eff_a")
-        _registry.discard("eff_b")
-        scopes_mod._allowed_scopes = None
-
-
-def test_get_effective_scopes_with_allowlist_returns_intersection():
-    """With an allowlist, get_effective_scopes() returns only the intersection."""
-    _registry.update({"eff_x", "eff_y", "eff_z"})
-    set_allowed_scopes(["eff_x", "eff_z", "eff_extra"])
-    try:
-        effective = get_effective_scopes()
-        assert "eff_x" in effective
-        assert "eff_z" in effective
-        assert "eff_y" not in effective      # declared but not allowed
-        assert "eff_extra" not in effective   # allowed but not declared
-    finally:
-        _registry.discard("eff_x")
-        _registry.discard("eff_y")
-        _registry.discard("eff_z")
-        scopes_mod._allowed_scopes = None
-
-
-def test_set_allowed_scopes_stores_as_set():
-    """set_allowed_scopes converts the list to a set."""
-    set_allowed_scopes(["a", "b", "a"])
-    try:
-        assert scopes_mod._allowed_scopes == {"a", "b"}
-    finally:
-        scopes_mod._allowed_scopes = None
-
-
-def test_get_effective_scopes_sorted():
-    """get_effective_scopes() returns sorted results."""
+def test_get_registered_scopes_returns_all_declared_sorted():
     _registry.update({"zzz_test", "aaa_test"})
     try:
-        effective = get_effective_scopes()
-        assert effective == sorted(effective)
+        registered = get_registered_scopes()
+        assert "zzz_test" in registered
+        assert "aaa_test" in registered
+        assert registered == sorted(registered)
     finally:
         _registry.discard("zzz_test")
         _registry.discard("aaa_test")

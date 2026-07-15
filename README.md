@@ -5,13 +5,9 @@ custom fields, and **screenshots as viewable images** — into Claude Code, and
 ships a `/fix-bug` skill that drives a ticket to a verified fix. Built with
 [FastMCP 3](https://github.com/jlowin/fastmcp).
 
-It runs in **single-user local mode**: it authenticates to Redmine with your own
-API key, needs **no admin rights**, and launches over stdio so your MCP client
-starts it on demand. Each developer runs it with their own key, so every read and
-write to the tracker is attributed to them.
-
-> A centralized multi-user OAuth mode is also supported but is not the default —
-> see [Optional: OAuth mode](#optional-oauth-mode).
+It authenticates to Redmine with your own API key, needs **no admin rights**, and
+launches over stdio so your MCP client starts it on demand. Each developer runs it
+with their own key, so every read and write to the tracker is attributed to them.
 
 ## How it works
 
@@ -100,12 +96,7 @@ is available.
 | `MCP_LOCAL_TOKEN` | No | `local` | Bearer token the MCP client presents in local **HTTP** mode |
 | `MCP_HOST` | No | `127.0.0.1` (local) | Bind host |
 | `MCP_PORT` | No | `8000` | Bind port |
-| `TOKEN_CACHE_TTL_SECONDS` | No | `60` | How long a verified token is trusted before re-checking with Redmine. `0` disables caching. |
 | `CORS_ALLOW_ORIGINS` | No | `*` | Comma-separated allowed origins. Narrow this for a shared deployment. |
-
-OAuth-mode variables (`REDMINE_CLIENT_ID`, `REDMINE_CLIENT_SECRET`,
-`MCP_BASE_URL`, `REDMINE_SCOPES`) are described under
-[Optional: OAuth mode](#optional-oauth-mode).
 
 ## Available tools & resources
 
@@ -134,9 +125,8 @@ OAuth-mode variables (`REDMINE_CLIENT_ID`, `REDMINE_CLIENT_SECRET`,
 | `redmine://enumerations/priorities` | Resource | `view_issues` | Issue priority levels with IDs |
 | `redmine://users/me` | Resource | _(auth only)_ | Current authenticated user profile |
 
-In local mode the "Redmine permission" column is whatever your API key's account
-role already grants — a tool returns a descriptive error if your account lacks the
-permission. (In OAuth mode the same column is the granted scope.)
+The "Redmine permission" column is what your API key's account role must grant — a
+tool returns a descriptive error if your account lacks the permission.
 
 Planned: attachment upload, structured logging.
 
@@ -191,38 +181,6 @@ Then `/fix-bug 1234`, or just "fix #1234".
 The skill will not write to Redmine without asking, and will not close a ticket on
 its own. It also treats issue text as untrusted input — anyone who can file a bug
 can write instructions aimed at the model in the repro steps.
-
-## Optional: OAuth mode
-
-For a shared, multi-user deployment you can run the server centrally with Redmine
-OAuth instead of per-developer API keys. This needs an admin to register an OAuth
-application in Redmine; individual developers then authorize through Redmine and
-never handle API keys.
-
-1. **Register an OAuth application**: Administration → Applications → New
-   Application. Set the Redirect URI to `http://<MCP_BASE_URL>/auth/callback`, mark
-   it a confidential client, and enable the scopes listed below. Copy the generated
-   **Client ID** and **Client Secret**.
-2. **Configure** `.env` with `REDMINE_CLIENT_ID` and `REDMINE_CLIENT_SECRET` (leave
-   `REDMINE_API_KEY` unset), plus `MCP_BASE_URL` (the externally reachable URL).
-3. **Run**: `mcp-redmine-rd` (HTTP on `MCP_PORT`), or `docker compose up --build`.
-
-Scopes to enable on the OAuth application, by the tools that use them:
-
-| Redmine permission | Scope | Used by |
-|---|---|---|
-| View projects | `view_project` | project reads, `redmine://projects/active`, `redmine://trackers`, `draft_bug_report` |
-| Search projects | `search_project` | `search_issues` |
-| Create / Edit project | `add_project`, `edit_project` | `create_project`, `update_project` |
-| View issues | `view_issues` | issue reads, statuses, priorities, `summarize_ticket` |
-| Add / Edit issues | `add_issues`, `edit_issues` | `create_issue`, `update_issue` |
-| View spent time | `view_time_entries` | `list_time_entries` |
-| View / Edit / Rename wiki | `view_wiki_pages`, `edit_wiki_pages`, `rename_wiki_pages` | wiki tools |
-
-If your OAuth app enables only a subset, set `REDMINE_SCOPES` (space-separated) so
-authorization requests only those; tools whose scopes aren't covered return a
-descriptive error at call time instead of breaking the whole flow. See
-[docs/architecture.md](docs/architecture.md) for the OAuth flow and token handling.
 
 ## License
 

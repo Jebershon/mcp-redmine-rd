@@ -1,4 +1,8 @@
-"""OAuth scope constants, decorator, and enforcement helpers for Redmine MCP tools.
+"""Scope constants, decorator, and enforcement helpers for Redmine MCP tools.
+
+A scope names the Redmine permission a tool needs. In local mode the client is
+granted all registered scopes (the API key already scopes to the user's Redmine
+role), so the decorator documents the requirement and gates unauthenticated calls.
 
 Usage — declare scopes directly on each tool or resource:
 
@@ -39,39 +43,13 @@ RENAME_WIKI_PAGES = "rename_wiki_pages" # Phase 5: rename_wiki_page
 
 _registry: set[str] = set()
 
-# Optional allowlist: when set, only these scopes are requested from Redmine.
-# Scopes declared by tools but not in this set won't be requested during OAuth;
-# those tools will return a scope-missing error at call time.
-_allowed_scopes: set[str] | None = None
-
-
-def set_allowed_scopes(scopes: list[str]) -> None:
-    """Set the allowlist of scopes the Redmine OAuth app supports.
-
-    When set, get_effective_scopes() returns only the intersection of declared
-    tool scopes and this allowlist.  When not set, all declared scopes are used.
-    """
-    global _allowed_scopes
-    _allowed_scopes = set(scopes)
-
 
 def get_registered_scopes() -> list[str]:
-    """Return all scopes declared via @requires_scopes across all registered tools.
+    """Return all scopes (Redmine permissions) declared via @requires_scopes.
 
-    Call this after register_tools() and register_resources() to get the complete set.
-    Used by verify_token fallback — always returns the full set regardless of allowlist.
+    Call after register_tools()/register_resources() for the complete set. Used
+    to grant the local token every scope the tools may need.
     """
-    return sorted(_registry)
-
-
-def get_effective_scopes() -> list[str]:
-    """Return the scopes to actually request during OAuth authorization.
-
-    If an allowlist is set (via set_allowed_scopes), returns the intersection of
-    declared tool scopes and the allowlist.  Otherwise returns all declared scopes.
-    """
-    if _allowed_scopes is not None:
-        return sorted(_registry & _allowed_scopes)
     return sorted(_registry)
 
 
@@ -79,10 +57,10 @@ def get_effective_scopes() -> list[str]:
 
 
 def requires_scopes(*scopes: str) -> Callable:
-    """Declare required OAuth scopes on a tool or resource.
+    """Declare the Redmine permissions a tool or resource needs.
 
-    At decoration time: registers scopes to the global registry so server.py can
-    collect them to build the OAuth scope request.
+    At decoration time: registers the scopes to the global registry so the local
+    token can be granted all of them.
 
     At call time: checks that the request is authenticated and that the token has
     all required scopes; returns a descriptive error string otherwise.
@@ -102,7 +80,7 @@ def requires_scopes(*scopes: str) -> Callable:
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
             token = get_access_token()
             if token is None:
-                return "Error: not authenticated. Please complete the OAuth flow first."
+                return "Error: not authenticated."
             if scopes:
                 if err := check_scope(token, *scopes):
                     return err
@@ -130,7 +108,7 @@ def check_scope(token: AccessToken, *required: str) -> str | None:
     missing = [s for s in required if s not in granted]
     if missing:
         return (
-            f"Error: requires OAuth scope(s): {', '.join(missing)}. "
-            "Please re-authorize with the required permissions."
+            f"Error: your Redmine account lacks the required permission(s): "
+            f"{', '.join(missing)}."
         )
     return None

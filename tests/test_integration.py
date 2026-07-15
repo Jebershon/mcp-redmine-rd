@@ -5,9 +5,8 @@ HTTP request shaping, attachment download, image downscaling, custom-field
 resolution, and error handling — by driving the actual registered tool functions
 against an in-process fake Redmine served through httpx.MockTransport.
 
-The two things NOT covered here, because they need a live Redmine 6.1 server, are
-the OAuth handshake and FastMCP's transport layer. get_access_token is patched to
-supply a token with full scopes, standing in for a completed authorization.
+The one thing NOT covered here is FastMCP's transport layer. get_access_token is
+patched to supply a token with full scopes, standing in for the local injection.
 """
 
 from __future__ import annotations

@@ -87,8 +87,8 @@ class RedmineClient:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         # When set, every request authenticates with this Redmine API key and the
-        # per-call `token` argument is ignored — this is single-user local mode.
-        # When None, the per-call token is sent as an OAuth Bearer (centralized mode).
+        # per-call `token` argument is ignored. When None, the per-call token is
+        # sent as a Bearer header (used by the test suite).
         self.api_key = api_key
         self._client = httpx.AsyncClient(
             timeout=timeout,
