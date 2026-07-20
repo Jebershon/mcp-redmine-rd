@@ -91,6 +91,17 @@ class FakeRedmine:
             )
         if method == "GET" and path == "/attachments/7.json":
             return httpx.Response(200, json={"attachment": ATTACHMENT})
+        # A text attachment (console.log) captured by the extension.
+        if method == "GET" and path == "/attachments/55.json":
+            return httpx.Response(200, json={"attachment": {
+                "id": 55, "filename": "console.log", "content_type": "text/plain",
+                "content_url": "https://redmine.example.com/attachments/download/55/console.log",
+            }})
+        if path == "/attachments/download/55/console.log":
+            return httpx.Response(
+                200, content=b"[error] ACT_Request_Validate failed",
+                headers={"content-type": "text/plain"},
+            )
         if method == "GET" and path == "/custom_fields.json":
             if self.custom_fields_admin_only:
                 return httpx.Response(403)
@@ -325,3 +336,34 @@ async def test_update_issue_sends_notes_and_custom_fields():
     sent = fake.updated[0]
     assert sent["notes"] == "Fixed in commit abc123."
     assert {"id": 3, "value": "Low"} in sent["custom_fields"]
+
+
+# --- get_attachment_text ---
+
+
+@pytest.mark.asyncio
+async def test_get_attachment_text_returns_content():
+    fake = FakeRedmine()
+    with _driver(fake) as call:
+        result = await call("get_attachment_text", attachment_id=55)
+    assert "console.log" in result
+    assert "ACT_Request_Validate failed" in result
+
+
+@pytest.mark.asyncio
+async def test_get_attachment_text_rejects_image():
+    """An image attachment should be redirected to get_issue_attachment."""
+    fake = FakeRedmine()
+    with _driver(fake) as call:
+        result = await call("get_attachment_text", attachment_id=7)
+    assert "not text" in result
+    # The binary was never downloaded.
+    assert ("GET", "/attachments/download/7/crash.png") not in fake.requests
+
+
+@pytest.mark.asyncio
+async def test_get_attachment_text_truncates():
+    fake = FakeRedmine()
+    with _driver(fake) as call:
+        result = await call("get_attachment_text", attachment_id=55, max_chars=5)
+    assert "truncated" in result

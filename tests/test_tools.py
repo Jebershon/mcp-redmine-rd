@@ -12,6 +12,7 @@ from mcp_redmine_rd.tools import (
     CustomFieldError,
     _build_custom_fields,
     _coerce_custom_value,
+    _is_text_attachment,
     _format_created_issue,
     _format_created_project,
     _format_issue,
@@ -721,3 +722,35 @@ async def test_build_custom_fields_reports_every_unresolved_name():
 
     message = str(exc_info.value)
     assert "Foo" in message and "Bar" in message
+
+
+# --- _is_text_attachment ---
+
+
+def test_is_text_attachment_plain_text():
+    assert _is_text_attachment({"content_type": "text/plain", "filename": "console.log"})
+
+
+def test_is_text_attachment_html():
+    assert _is_text_attachment({"content_type": "text/html", "filename": "dom.html"})
+
+
+def test_is_text_attachment_json():
+    assert _is_text_attachment({"content_type": "application/json", "filename": "network.json"})
+
+
+def test_is_text_attachment_content_type_with_charset():
+    assert _is_text_attachment({"content_type": "text/plain; charset=utf-8", "filename": "x.log"})
+
+
+def test_is_text_attachment_octet_stream_falls_back_to_extension():
+    """Redmine often serves .log as octet-stream; the extension saves it."""
+    assert _is_text_attachment({"content_type": "application/octet-stream", "filename": "network.har"})
+
+
+def test_is_text_attachment_rejects_image():
+    assert not _is_text_attachment({"content_type": "image/png", "filename": "screenshot.png"})
+
+
+def test_is_text_attachment_rejects_unknown_binary():
+    assert not _is_text_attachment({"content_type": "application/octet-stream", "filename": "blob.bin"})
