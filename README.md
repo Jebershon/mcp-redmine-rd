@@ -49,6 +49,27 @@ To run the server standalone over HTTP instead of stdio, `mcp-redmine-rd` serves
 `http://127.0.0.1:8000/mcp`; point your client at it with header
 `Authorization: Bearer <MCP_LOCAL_TOKEN>` (default `local`).
 
+## Install from PyPI (developers)
+
+Once published, developers install it without cloning:
+
+```bash
+pipx install mcp-redmine-rd          # isolated global install (recommended)
+# or:  pip install mcp-redmine-rd
+```
+
+Then register it with Claude Code — each developer uses their own API key:
+
+```bash
+claude mcp add redmine --scope user \
+  --env REDMINE_URL=https://tracker.rapiddata.com \
+  --env REDMINE_API_KEY=<your-key> \
+  -- mcp-redmine-rd-local
+```
+
+`pipx` keeps the tool in its own environment and puts `mcp-redmine-rd-local` on
+`PATH`, so the command resolves from any project.
+
 ## Sharing with your team
 
 The easiest way to give co-developers both the server and the `/fix-bug` skill is
